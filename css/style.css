@@ -1,0 +1,13 @@
+#cy {
+  height: 90%;
+  width: 100%;
+  position: absolute;
+  left: 0;
+  top: 10%;
+}
+
+#placeholder { width: 1000px; height: 600px; }
+
+.statistics, .statisticsJac{
+    display: inline-block;
+}
