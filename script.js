@@ -33,6 +33,22 @@ var union = function(x, y) {
   return res;
 }
 
+var factorial = function(num)
+{
+    // If the number is less than 0, reject it.
+    if (num < 0) {
+        return -1;
+    }
+    // If the number is 0, its factorial is 1.
+    else if (num == 0) {
+        return 1;
+    }
+    var tmp = num;
+    while (num-- > 2) {
+        tmp *= num;
+    }
+    return tmp;
+}
 
 /**
  * Using the papa parse result this function generates the adjacencyList. 
@@ -61,6 +77,22 @@ var generateAdjacencyList = function(result){
     return adjacencyList;
 }
 
+var localClusteringCoeficient = function(adjacencyList, node){
+    // get the total number of connection possibilities
+
+    
+    var listSize = adjacencyList[node].length;
+    var possibilities = factorial(listSize) / (factorial(2) * factorial(listSize-2));
+    
+    var currentConnected = 0;
+    for(var i = 0; i < adjacencyList[node].length; i++){
+        currentConnected = currentConnected + intersect(adjacencyList[node], adjacencyList[adjacencyList[node][i]]).length;
+    }
+    currentConnected = currentConnected/2;
+    var localCoeficient = currentConnected / possibilities;
+    
+    return localCoeficient;
+}
 
 /**
  * Generate some important statistics using a adjacencyList
@@ -79,11 +111,13 @@ var calculateStatistics = function(adjacencyList){
     // We have the predition list using Common Neighborhood and Jaccard
     var predictionLinksListCN = {};
     var predictionLinksListJac = {};
+    var localCoeficientList = {};
 
     
     // calculating node degree for each node
     for (var key in adjacencyList) {
-        
+        localCoeficientList[key] = localClusteringCoeficient(adjacencyList, key);
+
         // The node degree is the number of connectins that a node has
         nodeDegree[key] = adjacencyList[key].length;
         nodeDegreeAverage += nodeDegree[key];
@@ -113,11 +147,12 @@ var calculateStatistics = function(adjacencyList){
     }
     
     nodeDegreeAverage /= Object.keys(adjacencyList).length;
-    
+        
     // Returns an object that contains nodeDegree, the average and two predicitionLists
     return {
         nodeDegree: nodeDegree,
         nodeDegreeAverage: nodeDegreeAverage,
+        localCoeficientList: localCoeficientList,
         predictionLinksListCN: predictionLinksListCN,
         predictionLinksListJac: predictionLinksListJac
     };
@@ -155,6 +190,8 @@ var splitData = function (result) {
     console.log("Number of Nodes: " + Object.keys(adjacencyList).length);
     console.log(statistics.nodeDegree);
     console.log("Node Degree Average: " + statistics.nodeDegreeAverage);
+    console.log("Local coeficient List");
+    console.log(statistics.localCoeficientList);
 
     console.log("Sorting prediction List...");
 
@@ -178,8 +215,12 @@ var splitData = function (result) {
         prediciontLinksListCNSorted[element] = statistics.predictionLinksListCN[element];
     });
     
+    console.log('before predicition lists');
+    
     console.log(prediciontLinksListCNSorted);
     console.log(prediciontLinksListJacSorted);
+    
+    console.log('after prediciont lists');
     
     // We want only the first 10% values of our generated rankings
     var partialRankSize = Math.ceil((Object.keys(prediciontLinksListCNSorted).length * 0.1));
@@ -209,6 +250,10 @@ var splitData = function (result) {
 }
 
 
+
+
+
+
 /**
  * Description
  * @param {type} statistics Description
@@ -236,7 +281,7 @@ var generateBarchart = function (statistics) {
                 data: dataToPlot,
                 bars: {
                     show: true
-                }
+                },
             }
         ]);
     });
