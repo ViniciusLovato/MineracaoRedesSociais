@@ -1,4 +1,22 @@
 
+function productRange(a,b) {
+  var product=a,i=a;
+ 
+  while (i++<b) {
+    product*=i;
+  }
+  return product;
+}
+ 
+function combinations(n,k) {
+  if (n==k) {
+    return 1;
+  } else {
+    k=Math.max(k,n-k);
+    return productRange(k+1,n)/productRange(1,n-k);
+  }
+}
+
 /**
  * Return the intersection of a and b
  * @param {array} a
@@ -80,16 +98,23 @@ var generateAdjacencyList = function(result){
 var localClusteringCoeficient = function(adjacencyList, node){
     // get the total number of connection possibilities
 
-    
     var listSize = adjacencyList[node].length;
-    var possibilities = factorial(listSize) / (factorial(2) * factorial(listSize-2));
+    var localCoeficient = 0;
     
-    var currentConnected = 0;
-    for(var i = 0; i < adjacencyList[node].length; i++){
-        currentConnected = currentConnected + intersect(adjacencyList[node], adjacencyList[adjacencyList[node][i]]).length;
+    if(listSize > 1){
+        var possibilities = combinations(listSize, 2); //factorial(listSize) / (factorial(2) * factorial(listSize-2));
+        var currentConnected = 0;
+        
+        for(var i = 0; i < adjacencyList[node].length; i++){
+            // for some reason the first element is undefined when the file is parsed
+            //if(typeof adjacencyList[adjacencyList[node][i]] !== 'undefined')
+                currentConnected = parseInt(currentConnected) + parseInt(intersect(adjacencyList[node], adjacencyList[adjacencyList[node][i]]).length);
+        }
+        currentConnected = currentConnected/2;
+        localCoeficient = currentConnected / possibilities;
     }
-    currentConnected = currentConnected/2;
-    var localCoeficient = currentConnected / possibilities;
+    else localCoeficient = 0;
+
     
     return localCoeficient;
 }
@@ -118,7 +143,7 @@ var calculateStatistics = function(adjacencyList){
     // calculating node degree for each node
     for (var key in adjacencyList) {
         localCoeficientList[key] = localClusteringCoeficient(adjacencyList, key);
-        globalCoeficientValue = parseFloat(globalCoeficientValue) + parseFloat(localCoeficientList[key]);
+        globalCoeficientValue = globalCoeficientValue  + localCoeficientList[key];
 
         // The node degree is the number of connectins that a node has
         nodeDegree[key] = adjacencyList[key].length;
@@ -148,10 +173,10 @@ var calculateStatistics = function(adjacencyList){
         }
     }
     
-    var adjListLength = Object.keys(adjacencyList).length
+    var adjacencyListLength = Object.keys(adjacencyList).length;
     
-    nodeDegreeAverage /= adjListLength;
-    globalCoeficientValue /= adjListLength;
+    nodeDegreeAverage /= adjacencyListLength;
+    globalCoeficientValue /= adjacencyListLength;
         
     // Returns an object that contains nodeDegree, the average and two predicitionLists
     return {
@@ -189,6 +214,8 @@ var splitData = function (result) {
     var adjacencyList = generateAdjacencyList(result);
     
     console.log('Adjacency List');
+    
+    delete adjacencyList[''];
     console.log(adjacencyList);
     
     // Gerenate some statistics
@@ -209,9 +236,10 @@ var generateViewStatistics = function(statistics){
     
     console.log("Local coeficient List");
     console.log(statistics.localCoeficientList);
-    
+
     console.log("Global coeficient Value: " + statistics.globalCoeficientValue);
 
+    
     console.log("Sorting prediction List...");
 
     // Sort the CN prediction list to generate a ranking
@@ -255,11 +283,10 @@ var generateViewStatistics = function(statistics){
             current++;
         }
     }
-
-    console.log('Ploting graph');
+    
     // Barchar plot
     generateBarchart(statistics);
-    console.log('finished')
+    console.log('done');
 }
 
 
