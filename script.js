@@ -107,6 +107,7 @@ var calculateStatistics = function(adjacencyList){
     // Array that contains the degree of each node in the graph
     var nodeDegree = {};
     var nodeDegreeAverage = 0;
+    var globalCoeficientValue = 0;
     
     // We have the predition list using Common Neighborhood and Jaccard
     var predictionLinksListCN = {};
@@ -117,6 +118,7 @@ var calculateStatistics = function(adjacencyList){
     // calculating node degree for each node
     for (var key in adjacencyList) {
         localCoeficientList[key] = localClusteringCoeficient(adjacencyList, key);
+        globalCoeficientValue = parseFloat(globalCoeficientValue) + parseFloat(localCoeficientList[key]);
 
         // The node degree is the number of connectins that a node has
         nodeDegree[key] = adjacencyList[key].length;
@@ -146,13 +148,17 @@ var calculateStatistics = function(adjacencyList){
         }
     }
     
-    nodeDegreeAverage /= Object.keys(adjacencyList).length;
+    var adjListLength = Object.keys(adjacencyList).length
+    
+    nodeDegreeAverage /= adjListLength;
+    globalCoeficientValue /= adjListLength;
         
     // Returns an object that contains nodeDegree, the average and two predicitionLists
     return {
         nodeDegree: nodeDegree,
         nodeDegreeAverage: nodeDegreeAverage,
         localCoeficientList: localCoeficientList,
+        globalCoeficientValue: globalCoeficientValue,
         predictionLinksListCN: predictionLinksListCN,
         predictionLinksListJac: predictionLinksListJac
     };
@@ -182,16 +188,29 @@ var splitData = function (result) {
     // create the adjacencyList
     var adjacencyList = generateAdjacencyList(result);
     
+    console.log('Adjacency List');
     console.log(adjacencyList);
     
     // Gerenate some statistics
     var statistics = calculateStatistics(adjacencyList);   
     
-    console.log("Number of Nodes: " + Object.keys(adjacencyList).length);
+    generateViewStatistics(statistics);
+
+}
+
+var generateViewStatistics = function(statistics){
+    
+    console.log("Number of Nodes: " + Object.keys(statistics.nodeDegree).length);
+    
+    console.log('Node Degree List')
     console.log(statistics.nodeDegree);
+    
     console.log("Node Degree Average: " + statistics.nodeDegreeAverage);
+    
     console.log("Local coeficient List");
     console.log(statistics.localCoeficientList);
+    
+    console.log("Global coeficient Value: " + statistics.globalCoeficientValue);
 
     console.log("Sorting prediction List...");
 
@@ -215,13 +234,6 @@ var splitData = function (result) {
         prediciontLinksListCNSorted[element] = statistics.predictionLinksListCN[element];
     });
     
-    console.log('before predicition lists');
-    
-    console.log(prediciontLinksListCNSorted);
-    console.log(prediciontLinksListJacSorted);
-    
-    console.log('after prediciont lists');
-    
     // We want only the first 10% values of our generated rankings
     var partialRankSize = Math.ceil((Object.keys(prediciontLinksListCNSorted).length * 0.1));
     var current = 0;
@@ -243,13 +255,12 @@ var splitData = function (result) {
             current++;
         }
     }
-    
+
+    console.log('Ploting graph');
     // Barchar plot
     generateBarchart(statistics);
-
+    console.log('finished')
 }
-
-
 
 
 
