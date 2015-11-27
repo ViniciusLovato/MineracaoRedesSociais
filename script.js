@@ -133,17 +133,23 @@ var calculateStatistics = function(adjacencyList){
     var nodeDegree = {};
     var nodeDegreeAverage = 0;
     var globalCoeficientValue = 0;
+    // var numberOfConnections = 0;
     
     // We have the predition list using Common Neighborhood and Jaccard
     var predictionLinksListCN = {};
     var predictionLinksListJac = {};
     var localCoeficientList = {};
+    var removedLinksList = [];
+    
+    removedLinksList = removeLinks(adjacencyList);
 
     
     // calculating node degree for each node
     for (var key in adjacencyList) {
         localCoeficientList[key] = localClusteringCoeficient(adjacencyList, key);
         globalCoeficientValue = globalCoeficientValue  + localCoeficientList[key];
+        
+        // numberOfConnections = numberOfConnections + adjacencyList[key].length;
 
         // The node degree is the number of connectins that a node has
         nodeDegree[key] = adjacencyList[key].length;
@@ -177,6 +183,7 @@ var calculateStatistics = function(adjacencyList){
     
     nodeDegreeAverage /= adjacencyListLength;
     globalCoeficientValue /= adjacencyListLength;
+    // numberOfConnections /= 2;
         
     // Returns an object that contains nodeDegree, the average and two predicitionLists
     return {
@@ -184,10 +191,18 @@ var calculateStatistics = function(adjacencyList){
         nodeDegreeAverage: nodeDegreeAverage,
         localCoeficientList: localCoeficientList,
         globalCoeficientValue: globalCoeficientValue,
+        removedLinksList: removedLinksList,
+        // numberOfConnections: numberOfConnections,
         predictionLinksListCN: predictionLinksListCN,
         predictionLinksListJac: predictionLinksListJac
     };
 }
+
+
+var randomProperty = function (obj) {
+    var keys = Object.keys(obj)
+    return keys[ keys.length * Math.random() << 0];
+};
 
 
 /**
@@ -195,11 +210,46 @@ var calculateStatistics = function(adjacencyList){
  * @param {type} adjacencyList Description
  * @param {type} nodeDegree Description
  */
-var preProcessingRemoveLinks = function(adjacencyList, nodeDegree){
-  for(var key in adjacencyList){
-      console.log(adjacencyList[key]);
-  }  
-  //TODO
+var removeLinks = function(adjacencyList){
+    
+    var removed = 0;
+    var numberOfConnections = 0;   
+    var removedLinksList = [];
+    
+    for(var key in adjacencyList){
+      numberOfConnections = numberOfConnections + adjacencyList[key].length;
+    }  
+    numberOfConnections /= 2;
+    var numberOfLinksToRemove = Math.ceil(numberOfConnections * 0.1);
+    
+    for(removed = 0; removed < numberOfLinksToRemove; removed++){
+        // get random node in the graph
+        var randomNode = randomProperty(adjacencyList);
+        var randomNode2 = adjacencyList[randomNode][Math.floor(Math.random() * adjacencyList[randomNode].length)];
+        
+        // get random connection
+        
+        // removing connection
+        var index_1 = adjacencyList[randomNode].indexOf(randomNode2);
+        if (index_1 > -1) {
+            adjacencyList[randomNode].splice(index_1, 1);
+        }
+        
+        if(typeof randomNode2 !== 'undefined'){
+            var index_2 = adjacencyList[randomNode2].indexOf(randomNode);
+            if (index_2 > -1) {
+                adjacencyList[randomNode2].splice(index_2, 1);
+                removedLinksList.push('[' + randomNode + ',' + randomNode2 + ']')
+                // console.log('Connection to be removed: ' +  randomNode + ',' + randomNode2);
+            }
+        }
+        else {
+            delete adjacencyList[randomNode]
+            // console.log('Removed the empty to be removed: ' +  randomNode + ',' + randomNode2);
+        }
+
+    }
+  return removedLinksList;
 };
 
 
@@ -228,6 +278,7 @@ var splitData = function (result) {
 var generateViewStatistics = function(statistics){
     
     console.log("Number of Nodes: " + Object.keys(statistics.nodeDegree).length);
+    // console.log("Number of Connections: " + statistics.numberOfConnections);
     
     console.log('Node Degree List')
     console.log(statistics.nodeDegree);
@@ -247,10 +298,15 @@ var generateViewStatistics = function(statistics){
         return statistics.predictionLinksListCN[b] - statistics.predictionLinksListCN[a]
     });
     
+    console.log('CN sorted');
+    
     // Sort the Jaccard prediction list to generate a ranking
     var keysSortedJac = Object.keys(statistics.predictionLinksListJac).sort(function (a, b) {
         return statistics.predictionLinksListJac[b] - statistics.predictionLinksListJac[a]
     });
+    
+    console.log('Jac sorted');
+
     
     // This part is optinal, it reduces performance because copies a huge object
     var prediciontLinksListJacSorted = {};
@@ -261,6 +317,8 @@ var generateViewStatistics = function(statistics){
     keysSortedCN.forEach(function (element) {
         prediciontLinksListCNSorted[element] = statistics.predictionLinksListCN[element];
     });
+    
+    console.log('finished optional part');
     
     // We want only the first 10% values of our generated rankings
     var partialRankSize = Math.ceil((Object.keys(prediciontLinksListCNSorted).length * 0.1));
@@ -275,6 +333,7 @@ var generateViewStatistics = function(statistics){
         }
     }
     
+    
     current = 0;
     for(var key in prediciontLinksListJacSorted){
         
@@ -284,7 +343,12 @@ var generateViewStatistics = function(statistics){
         }
     }
     
+    statistics.removedLinksList.forEach(function(element){
+        $('.removedLinks').append(element + '<br>');
+    });
+    
     // Barchar plot
+    console.log('plotting barchar');
     generateBarchart(statistics);
     console.log('done');
 }
@@ -323,9 +387,6 @@ var generateBarchart = function (statistics) {
             }
         ]);
     });
-
-    //$('.statistics').append('Node Average: ' + statistics.nodeDegreeAverage);
-
 }
 
 
@@ -346,70 +407,4 @@ var parse = function () {
     });
 
 
-};
-
-
-/**
- * Description
- */
-var generateGraph = function () {
-    var nodes = [];
-    var edges = [];
-
-    for (var key in adjacencyList) {
-        nodes.push({
-            data: {
-                id: key
-            }
-        });
-
-        var currentArray = adjacencyList[key];
-
-        currentArray.forEach(function (element) {
-            edges.push({
-                data: {
-                    id: key + element,
-                    source: key,
-                    target: element
-                }
-            });
-        });
-    }
-
-    console.log(nodes);
-    console.log(edges);
-
-
-    var cy = cytoscape({
-        container: document.getElementById('cy'),
-
-        boxSelectionEnabled: false,
-        autounselectify: true,
-
-        style: cytoscape.stylesheet()
-            .selector('node')
-            .css({
-                'content': 'data(id)'
-            })
-            .selector('edge')
-            .css({
-                'target-arrow-shape': 'triangle',
-                'width': 4,
-                'line-color': '#ddd',
-                'target-arrow-color': '#ddd'
-            }),
-
-        elements: {
-            nodes: nodes,
-
-            edges: edges
-        },
-
-        layout: {
-            name: 'concentric',
-            directed: true,
-            roots: '#a',
-            padding: 10
-        }
-    });
 };
