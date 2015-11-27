@@ -328,7 +328,7 @@ var generateViewStatistics = function(statistics){
     for(var key in prediciontLinksListCNSorted){
         
         if(current < partialRankSize){
-            $('.statistics').append('[' + key + ']' + ' = ' + prediciontLinksListCNSorted[key] + '<br>');
+            $('.statistics').append((parseInt(current)+1) + '. [' + key + ']' + ' = ' + prediciontLinksListCNSorted[key] + '<br>');
             current++;
         }
     }
